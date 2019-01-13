@@ -1,5 +1,7 @@
 # GPU Fan Control Applet
 
+![Applet Example](screenshot.png)
+
 This applet controls fan speed via `/sys/class/hwmon/hwmon2/pwm1`.  
 It expects manual fan control to already be enabled.  
 Check if the correct device is used by hovering on the applet (eg `hwmon name: amdgpu` for AMD GPUs).
