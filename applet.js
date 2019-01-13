@@ -57,10 +57,14 @@ class FanControlApplet extends Applet.TextApplet {
     this.menuManager = new PopupMenu.PopupMenuManager(this);
     this.menu = new Applet.AppletPopupMenu(this, orientation);
     this.menuManager.addMenu(this.menu);
+    // Fan speed slider label
+    this.sliderLabel = new PopupMenu.PopupMenuItem('', {reactive: false});
+    this.menu.addMenuItem(this.sliderLabel);
     // Fan speed slider
     this.slider = new PopupMenu.PopupSliderMenuItem(0);
     this.slider.connect('value-changed', (slider, value) => {
       this.pwmValue = Math.round(convertRange(value, {start: 0, end: 1}, this.pwmRange));
+      this.update();
     });
     this.slider.connect('drag-end', () => {
       writeFile(this.pwmFile, this.pwmValue.toString());
@@ -79,10 +83,14 @@ class FanControlApplet extends Applet.TextApplet {
       start: parsePwmValue(readPath(`${hwmonDirPath}/pwm1_min`)),
       end: parsePwmValue(readPath(`${hwmonDirPath}/pwm1_max`))
     };
+    this.pwmValue = parsePwmValue(readFile(this.pwmFile));
     this.update();
     // Monitor pwm changes
     this.monitor = this.pwmFile.monitor(0, null);
-    this.monitor.connect('changed', (self, file, otherFile, eventType) => this.update());
+    this.monitor.connect('changed', (self, file, otherFile, eventType) => {
+      this.pwmValue = parsePwmValue(readFile(this.pwmFile));
+      this.update();
+    });
   }
 
   // eslint-disable-next-line camelcase
@@ -91,9 +99,9 @@ class FanControlApplet extends Applet.TextApplet {
   }
 
   update() {
-    this.pwmValue = parsePwmValue(readFile(this.pwmFile));
-    this.slider.setValue(convertRange(this.pwmValue, this.pwmRange, {start: 0, end: 1}));
     const percent = Math.round(convertRange(this.pwmValue, this.pwmRange, {start: 0, end: 100}));
+    this.slider.setValue(convertRange(this.pwmValue, this.pwmRange, {start: 0, end: 1}));
+    this.sliderLabel.setLabel(`Fan Speed: ${percent}%`);
     this.set_applet_label(`GPU Fans: ${percent}%`);
   }
 }
