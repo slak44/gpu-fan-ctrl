@@ -1,0 +1,7 @@
+{
+  "uuid": "gpu-fan-ctrl@slak.local",
+  "name": "GPU Fan Control",
+  "description": "Control GPU fans with a slider",
+  "icon": "application",
+  "max-instances": "-1"
+}
