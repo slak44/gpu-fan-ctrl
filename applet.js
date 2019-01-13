@@ -5,6 +5,7 @@ const PopupMenu = imports.ui.popupMenu;
 const St = imports.gi.St;
 const Gio = imports.gi.Gio;
 
+// Shim browser console object
 const console = {
   log(...args) {
     global.log(args.join(', '));
