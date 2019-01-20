@@ -4,6 +4,7 @@ const Main = imports.ui.main;
 const PopupMenu = imports.ui.popupMenu;
 const St = imports.gi.St;
 const Gio = imports.gi.Gio;
+const Settings = imports.ui.settings;
 
 // Shim browser console object
 const console = {
@@ -47,12 +48,20 @@ function parsePwmValue(raw) {
   return parseInt(raw.toString().trim(), 10);
 }
 
-const hwmonDirPath = '/sys/class/hwmon/hwmon2/';
+function hwmonPathFor(id) {
+  return `/sys/class/hwmon/hwmon${id}/`;
+}
+
+const HWMON_SETTING = 'hwmonId';
 
 class FanControlApplet extends Applet.TextApplet {
-  constructor(orientation, panelHeight, instanceId) {
+  constructor(metadata, orientation, panelHeight, instanceId) {
     super(orientation, panelHeight, instanceId);
-    this.set_applet_tooltip(`hwmon name: ${readPath(`${hwmonDirPath}/name`).trim()}`);
+    // Create applet settings
+    this.settings = new Settings.AppletSettings(this, metadata.uuid, instanceId);
+    this.settings.bindProperty(Settings.BindingDirection.IN, HWMON_SETTING, HWMON_SETTING, this.setPwmData, null);
+    // Set hwmon name tooltip
+    this.set_applet_tooltip(`hwmon name: ${readPath(`${hwmonPathFor(this.hwmonId)}/name`).trim()}`);
     // Create the menu
     this.menuManager = new PopupMenu.PopupMenuManager(this);
     this.menu = new Applet.AppletPopupMenu(this, orientation);
@@ -77,25 +86,31 @@ class FanControlApplet extends Applet.TextApplet {
       writeFile(this.pwmFile, this.pwmValue.toString());
     });
     this.menu.addMenuItem(this.setTo50);
-    // Get pwm file and update views
-    this.pwmFile = Gio.File.new_for_path(`${hwmonDirPath}/pwm1`);
+    // Initial PWM
+    this.setPwmData();
+  }
+
+  // eslint-disable-next-line camelcase
+  on_applet_clicked() {
+    this.menu.toggle();
+  }
+
+  setPwmData() {
+    // Get pwm file
+    this.pwmFile = Gio.File.new_for_path(`${hwmonPathFor(this.hwmonId)}/pwm1`);
     this.pwmRange = {
-      start: parsePwmValue(readPath(`${hwmonDirPath}/pwm1_min`)),
-      end: parsePwmValue(readPath(`${hwmonDirPath}/pwm1_max`))
+      start: parsePwmValue(readPath(`${hwmonPathFor(this.hwmonId)}/pwm1_min`)),
+      end: parsePwmValue(readPath(`${hwmonPathFor(this.hwmonId)}/pwm1_max`))
     };
     this.pwmValue = parsePwmValue(readFile(this.pwmFile));
-    this.update();
     // Monitor pwm changes
     this.monitor = this.pwmFile.monitor(0, null);
     this.monitor.connect('changed', (self, file, otherFile, eventType) => {
       this.pwmValue = parsePwmValue(readFile(this.pwmFile));
       this.update();
     });
-  }
-
-  // eslint-disable-next-line camelcase
-  on_applet_clicked() {
-    this.menu.toggle();
+    // Update view
+    this.update();
   }
 
   update() {
@@ -107,5 +122,5 @@ class FanControlApplet extends Applet.TextApplet {
 }
 
 function main(metadata, orientation, panelHeight, instanceId) {
-  return new FanControlApplet(orientation, panelHeight, instanceId);
+  return new FanControlApplet(metadata, orientation, panelHeight, instanceId);
 }

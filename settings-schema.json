@@ -1,0 +1,14 @@
+{
+  "head": {
+    "type": "header",
+    "description": "Settings for GPU Fan Control"
+  },
+  "hwmonId": {
+    "type": "spinbutton",
+    "default": 1,
+    "min": 0,
+    "max": 20,
+    "step": 1,
+    "description": "Select which hwmon is the GPU (for example, pick \"1\" for /sys/class/hwmon/hwmon1/)"
+  }
+}
