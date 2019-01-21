@@ -17,7 +17,9 @@ const console = {
 };
 
 function readPath(path) {
-  return readFile(Gio.File.new_for_path(path)).toString();
+  const data = readFile(Gio.File.new_for_path(path));
+  if (data === null) return '<null>';
+  return data.toString();
 }
 
 function readFile(file) {
@@ -26,7 +28,7 @@ function readFile(file) {
     return data;
   } catch (err) {
     console.error(err.message);
-    return null;
+    return '<null>';
   }
 }
 
@@ -115,7 +117,8 @@ class FanControlApplet extends Applet.TextApplet {
 
   update() {
     const percent = Math.round(convertRange(this.pwmValue, this.pwmRange, {start: 0, end: 100}));
-    this.slider.setValue(convertRange(this.pwmValue, this.pwmRange, {start: 0, end: 1}));
+    const normalized = convertRange(this.pwmValue, this.pwmRange, {start: 0, end: 1});
+    this.slider.setValue(isNaN(normalized) ? 0 : normalized);
     this.sliderLabel.setLabel(`Fan Speed: ${percent}%`);
     this.set_applet_label(`GPU Fans: ${percent}%`);
   }
