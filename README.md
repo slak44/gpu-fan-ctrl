@@ -1,6 +1,7 @@
 # GPU Fan Control Applet
 
-![Applet Example](screenshot.png)
+![Applet Example 1](screenshot_unlocked.png)
+![Applet Example 2](screenshot_locked.png)
 
 This applet controls fan speed via `/sys/class/hwmon/hwmon$id/pwm1`, where the id is provided from settings.  
 It expects manual fan control to already be enabled, and for the current user to have write privileges on the files in the hwmon folder.  
