@@ -68,7 +68,7 @@ class FanControlApplet extends Applet.TextApplet {
     this.settings = new Settings.AppletSettings(this, metadata.uuid, instanceId);
     this.settings.bindProperty(Settings.BindingDirection.IN, HWMON_SETTING, HWMON_SETTING, this.setPwmData, null);
     // Set hwmon name tooltip
-    this.set_applet_tooltip(`hwmon name: ${readPath(`${hwmonPathFor(this.hwmonId)}/name`).trim()}`);
+    this.setNameTooltip();
     // Create the menu
     this.menuManager = new PopupMenu.PopupMenuManager(this);
     this.menu = new Applet.AppletPopupMenu(this, orientation);
@@ -110,6 +110,10 @@ class FanControlApplet extends Applet.TextApplet {
     this.menu.toggle();
   }
 
+  setNameTooltip() {
+    this.set_applet_tooltip(`hwmon name: ${readPath(`${hwmonPathFor(this.hwmonId)}/name`).trim()}`);
+  }
+
   setPwmData() {
     // Get pwm file
     this.pwmFile = Gio.File.new_for_path(`${hwmonPathFor(this.hwmonId)}/pwm1`);
@@ -126,18 +130,23 @@ class FanControlApplet extends Applet.TextApplet {
       this.update();
     });
     this.monitorEnable = this.pwmEnableFile.monitor(0, null);
-    this.monitorEnable.connect('changed', () => this.update());
+    this.monitorEnable.connect('changed', () => {
+      this.pwmValue = parsePwmValue(readFile(this.pwmFile));
+      this.update();
+    });
     // Update view
     this.update();
   }
 
   update() {
+    this.setNameTooltip();
     const percent = Math.round(convertRange(this.pwmValue, this.pwmRange, {start: 0, end: 100}));
     const normalized = convertRange(this.pwmValue, this.pwmRange, {start: 0, end: 1});
     this.slider.setValue(isNaN(normalized) ? 0 : normalized);
     this.sliderLabel.setLabel(`Fan Speed: ${percent}%`);
     this.set_applet_label(`GPU Fans: ${percent}%`);
-    const isAuto = readFile(this.pwmEnableFile).trim() === PWM_AUTO;
+    const enableValue = readFile(this.pwmEnableFile);
+    const isAuto = !!enableValue && enableValue.trim() === PWM_AUTO;
     this.setAutoPwm.setToggleState(isAuto);
     this.setTo50.setSensitive(!isAuto);
     this.slider.setSensitive(!isAuto);
