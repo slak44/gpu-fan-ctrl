@@ -18,23 +18,24 @@ const console = {
 
 function readPath(path) {
   const data = readFile(Gio.File.new_for_path(path));
-  if (data === null) return '<null>';
+  if (data === null) return 'nil';
   return data.toString();
 }
 
 function readFile(file) {
   try {
     const [ok, data] = file.load_contents(null);
-    return data;
+    if (data === null) return null;
+    return String.fromCharCode.apply(null, data);
   } catch (err) {
     console.error(err.message);
-    return '<null>';
+    return null;
   }
 }
 
 function writeFile(file, text) {
   try {
-    file.replace_contents(text, null, false, 0, null);
+    file.replace_contents(text, null, false, Gio.FileCreateFlags.NONE, null);
   } catch (err) {
     console.error(err.message);
   }
@@ -47,6 +48,7 @@ function convertRange(number, oldRange, newRange) {
 }
 
 function parsePwmValue(raw) {
+  if (raw === null) return NaN;
   return parseInt(raw.toString().trim(), 10);
 }
 
