@@ -56,6 +56,9 @@ function hwmonPathFor(id) {
   return `/sys/class/hwmon/hwmon${id}/`;
 }
 
+const PWM_AUTO = '2';
+const PWM_MANUAL = '1';
+
 const HWMON_SETTING = 'hwmonId';
 
 class FanControlApplet extends Applet.TextApplet {
@@ -90,6 +93,12 @@ class FanControlApplet extends Applet.TextApplet {
       writeFile(this.pwmFile, this.pwmValue.toString());
     });
     this.menu.addMenuItem(this.setTo50);
+    // Auto fan control checkbox
+    this.setAutoPwm = new PopupMenu.PopupSwitchIconMenuItem('Enable automatic fan control', false, 'changes-prevent', St.IconType.SYMBOLIC);
+    this.setAutoPwm.connect('toggled', () => {
+      writeFile(this.pwmEnableFile, this.setAutoPwm.state ? PWM_AUTO : PWM_MANUAL);
+    });
+    this.menu.addMenuItem(this.setAutoPwm);
     // Initial PWM
     this.setPwmData();
   }
@@ -102,6 +111,7 @@ class FanControlApplet extends Applet.TextApplet {
   setPwmData() {
     // Get pwm file
     this.pwmFile = Gio.File.new_for_path(`${hwmonPathFor(this.hwmonId)}/pwm1`);
+    this.pwmEnableFile = Gio.File.new_for_path(`${hwmonPathFor(this.hwmonId)}/pwm1_enable`);
     this.pwmRange = {
       start: parsePwmValue(readPath(`${hwmonPathFor(this.hwmonId)}/pwm1_min`)),
       end: parsePwmValue(readPath(`${hwmonPathFor(this.hwmonId)}/pwm1_max`))
@@ -113,6 +123,8 @@ class FanControlApplet extends Applet.TextApplet {
       this.pwmValue = parsePwmValue(readFile(this.pwmFile));
       this.update();
     });
+    this.monitorEnable = this.pwmEnableFile.monitor(0, null);
+    this.monitorEnable.connect('changed', () => this.update());
     // Update view
     this.update();
   }
@@ -123,6 +135,7 @@ class FanControlApplet extends Applet.TextApplet {
     this.slider.setValue(isNaN(normalized) ? 0 : normalized);
     this.sliderLabel.setLabel(`Fan Speed: ${percent}%`);
     this.set_applet_label(`GPU Fans: ${percent}%`);
+    this.setAutoPwm.setToggleState(readFile(this.pwmEnableFile).trim() === PWM_AUTO);
   }
 }
 
