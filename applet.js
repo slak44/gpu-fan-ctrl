@@ -97,6 +97,8 @@ class FanControlApplet extends Applet.TextApplet {
     this.setAutoPwm = new PopupMenu.PopupSwitchIconMenuItem('Enable automatic fan control', false, 'changes-prevent', St.IconType.SYMBOLIC);
     this.setAutoPwm.connect('toggled', () => {
       writeFile(this.pwmEnableFile, this.setAutoPwm.state ? PWM_AUTO : PWM_MANUAL);
+      this.setTo50.setSensitive(!this.setAutoPwm.state);
+      this.slider.setSensitive(!this.setAutoPwm.state);
     });
     this.menu.addMenuItem(this.setAutoPwm);
     // Initial PWM
@@ -135,7 +137,10 @@ class FanControlApplet extends Applet.TextApplet {
     this.slider.setValue(isNaN(normalized) ? 0 : normalized);
     this.sliderLabel.setLabel(`Fan Speed: ${percent}%`);
     this.set_applet_label(`GPU Fans: ${percent}%`);
-    this.setAutoPwm.setToggleState(readFile(this.pwmEnableFile).trim() === PWM_AUTO);
+    const isAuto = readFile(this.pwmEnableFile).trim() === PWM_AUTO;
+    this.setAutoPwm.setToggleState(isAuto);
+    this.setTo50.setSensitive(!isAuto);
+    this.slider.setSensitive(!isAuto);
   }
 }
 
